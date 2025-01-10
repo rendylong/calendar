@@ -19,18 +19,13 @@ interface Event {
   recurrence?: {
     frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
     interval?: number;
-    count?: number;
     until?: string;
+    count?: number;
+    byDay?: string[];
   };
   created: string;
   lastModified: string;
-}
-
-interface EventDetailProps {
-  event: Event;
-  onClose: () => void;
-  onEdit: (event: Event) => void;
-  onDelete: (event: Event) => void;
+  timezone?: string;
 }
 
 const statusLabels: Record<Event['status'], string> = {
@@ -44,6 +39,13 @@ const priorityLabels: Record<number, string> = {
   2: '中',
   3: '低'
 };
+
+interface EventDetailProps {
+  event: Event;
+  onClose: () => void;
+  onEdit: (event: Event) => void;
+  onDelete: (event: Event) => void;
+}
 
 export default function EventDetail({ event, onClose, onEdit, onDelete }: EventDetailProps) {
   return (
@@ -73,6 +75,9 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
                   {event.category}
                 </span>
               )}
+              <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800">
+                {statusLabels[event.status]}
+              </span>
             </div>
           </div>
           <button

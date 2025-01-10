@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getLocalTime, roundToNearestQuarter, formatTime, getDefaultStartTime, getDefaultEndTime } from '@/utils/timeUtils';
+import { getDefaultStartTime, getDefaultEndTime, formatTime } from '@/utils/timeUtils';
 
 interface Event {
   id: number;
@@ -33,17 +33,8 @@ interface EventFormProps {
   selectedDate: Date;
   onSave: (event: Omit<Event, 'id' | 'uid' | 'created' | 'lastModified'>) => void;
   onClose: () => void;
-  position: { x: number; y: number } | null;
   editingEvent: Event | null;
 }
-
-const categories = [
-  'MEETING',
-  'TRAINING',
-  'REVIEW',
-  'PERSONAL',
-  'OTHER'
-];
 
 const timeOptions = Array.from({ length: 24 * 4 }, (_, i) => {
   const date = new Date();
@@ -136,7 +127,6 @@ export default function EventForm({
   selectedDate,
   onSave,
   onClose,
-  position,
   editingEvent
 }: EventFormProps) {
   const defaultStartTime = getDefaultStartTime();

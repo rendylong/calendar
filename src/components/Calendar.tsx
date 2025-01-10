@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import EventForm from './EventForm';
 import EventDetail from './EventDetail';
 
@@ -168,7 +168,6 @@ const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(getInitialDate());
   const [events, setEvents] = useState<Event[]>(mockEvents);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [formPosition, setFormPosition] = useState<{ x: number; y: number } | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -272,17 +271,12 @@ const Calendar = () => {
       return;
     }
     
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const now = new Date();
     const newDate = new Date(date);
     newDate.setHours(now.getHours());
     newDate.setMinutes(Math.floor(now.getMinutes() / 15) * 15);
     
     setSelectedDate(newDate);
-    setFormPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.top + window.scrollY,
-    });
   };
 
   const handleWeekTimeClick = (e: React.MouseEvent, date: Date, hour: number) => {
@@ -302,10 +296,6 @@ const Calendar = () => {
     newDate.setMinutes(roundedMinutes);
     
     setSelectedDate(newDate);
-    setFormPosition({
-      x: rect.left + rect.width / 2,
-      y: e.clientY + window.scrollY
-    });
   };
 
   const handleSaveEvent = (eventData: Omit<Event, 'id' | 'uid' | 'created' | 'lastModified'>) => {
@@ -352,7 +342,6 @@ const Calendar = () => {
     setEvents(updatedEvents);
     localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
     
-    setFormPosition(null);
     setSelectedDate(null);
     setEditingEvent(null);
   };
@@ -367,10 +356,9 @@ const Calendar = () => {
     setSelectedEvent(null);
     const date = new Date(event.date);
     setSelectedDate(date);
-    setFormPosition({ x: window.innerWidth / 2, y: window.scrollY + 100 });
   };
 
-  const scrollToCurrentTime = () => {
+  const scrollToCurrentTime = useCallback(() => {
     if (weekViewRef.current && viewMode === 'week') {
       const now = new Date();
       const hour = now.getHours();
@@ -378,14 +366,14 @@ const Calendar = () => {
       const scrollPosition = (hour * 64) + ((minute / 60) * 64) - 100; // 100px offset for better visibility
       weekViewRef.current.scrollTop = Math.max(0, scrollPosition);
     }
-  };
+  }, [viewMode]);
 
   // Scroll to current time when switching to week view or when view mode changes
   useEffect(() => {
     if (viewMode === 'week') {
       scrollToCurrentTime();
     }
-  }, [viewMode]);
+  }, [viewMode, scrollToCurrentTime]);
 
   const isWeekend = (dayIndex: number) => {
     return dayIndex === 0 || dayIndex === 6;
@@ -635,7 +623,6 @@ const Calendar = () => {
 
   const handleBackgroundClick = () => {
     setSelectedEvent(null);
-    setFormPosition(null);
     setSelectedDate(null);
     setEditingEvent(null);
   };
@@ -712,7 +699,6 @@ const Calendar = () => {
             selectedDate={selectedDate}
             onSave={handleSaveEvent}
             onClose={handleBackgroundClick}
-            position={formPosition}
             editingEvent={editingEvent}
           />
         </div>
