@@ -11,7 +11,7 @@ const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8�
 const currentUser = {
   name: '山田太郎',
   email: 'yamada.taro@example.com',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=yamada'
+  avatar: '/images/default-avatar.svg'
 };
 
 export default function Home() {
