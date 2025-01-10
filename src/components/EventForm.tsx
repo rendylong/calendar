@@ -34,6 +34,7 @@ interface EventFormProps {
   onSave: (event: Omit<Event, 'id' | 'uid' | 'created' | 'lastModified'>) => void;
   onClose: () => void;
   editingEvent: Event | null;
+  initialTime?: string;
 }
 
 const timeOptions = Array.from({ length: 24 * 4 }, (_, i) => {
@@ -127,9 +128,10 @@ export default function EventForm({
   selectedDate,
   onSave,
   onClose,
-  editingEvent
+  editingEvent,
+  initialTime
 }: EventFormProps) {
-  const defaultStartTime = getDefaultStartTime();
+  const defaultStartTime = initialTime || getDefaultStartTime();
   const defaultEndTime = getDefaultEndTime(defaultStartTime);
 
   const [title, setTitle] = useState('');

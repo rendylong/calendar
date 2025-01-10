@@ -30,120 +30,9 @@ interface Event {
   timezone?: string;             // iCalendar TZID
 }
 
-// Mock user
-const currentUser = {
-  name: '山田太郎',
-  email: 'yamada.taro@example.com'
-};
-
-// Updated mock data with new fields
-const mockEvents: Event[] = [
-  { 
-    id: 1,
-    uid: 'evt-001@example.com',
-    title: 'チーム会議',
-    date: '2024-01-10',
-    time: '10:00',
-    endTime: '11:00',
-    description: '週次プロジェクトの進捗確認',
-    location: '会議室A',
-    user: currentUser.name,
-    guests: ['suzuki@example.com', 'tanaka@example.com'],
-    status: 'CONFIRMED',
-    category: 'MEETING',
-    priority: 2,
-    recurrence: {
-      frequency: 'WEEKLY',
-      byDay: ['WE'],
-      count: 12
-    },
-    created: '2024-01-01T09:00:00',
-    lastModified: '2024-01-01T09:00:00',
-    timezone: 'Asia/Tokyo'
-  },
-  { 
-    id: 2,
-    uid: 'evt-002@example.com',
-    title: 'プロジェクトレビュー',
-    date: '2024-01-15',
-    time: '14:30',
-    endTime: '16:00',
-    description: 'Q1目標の達成状況確認',
-    location: 'オンライン',
-    user: '山田花子',
-    guests: [],
-    status: 'CONFIRMED',
-    category: 'REVIEW',
-    priority: 1,
-    created: '2024-01-01T09:00:00',
-    lastModified: '2024-01-01T09:00:00',
-    timezone: 'Asia/Tokyo'
-  },
-  { 
-    id: 3,
-    uid: 'evt-003@example.com',
-    title: '顧客面談',
-    date: '2024-01-20',
-    time: '09:00',
-    endTime: '10:30',
-    description: '新規提案についての打ち合わせ',
-    location: '会議室B',
-    user: '鈴木一郎',
-    guests: [],
-    status: 'CONFIRMED',
-    category: 'MEETING',
-    priority: 1,
-    created: '2024-01-01T09:00:00',
-    lastModified: '2024-01-01T09:00:00',
-    timezone: 'Asia/Tokyo'
-  },
-  { 
-    id: 4,
-    uid: 'evt-004@example.com',
-    title: '部署会議',
-    date: '2024-01-10',
-    time: '15:00',
-    endTime: '16:00',
-    description: '来月の計画について',
-    location: '大会議室',
-    user: '佐藤めぐみ',
-    guests: [],
-    status: 'CONFIRMED',
-    category: 'MEETING',
-    priority: 2,
-    created: '2024-01-01T09:00:00',
-    lastModified: '2024-01-01T09:00:00',
-    timezone: 'Asia/Tokyo'
-  },
-  { 
-    id: 5,
-    uid: 'evt-005@example.com',
-    title: 'トレーニング',
-    date: '2024-01-15',
-    time: '13:00',
-    endTime: '14:00',
-    description: '新システムの使用方法',
-    location: 'トレーニングルーム',
-    user: '高橋健一',
-    guests: [],
-    status: 'CONFIRMED',
-    category: 'TRAINING',
-    priority: 3,
-    created: '2024-01-01T09:00:00',
-    lastModified: '2024-01-01T09:00:00',
-    timezone: 'Asia/Tokyo'
-  }
-];
-
-const getInitialDate = () => {
-  // Use local time instead of UTC
-  return new Date(2024, 0, 1, 0, 0, 0);
-};
-
-const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-
 type ViewMode = 'month' | 'week';
+
+const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 
 const timeSlots = Array.from({ length: 24 }, (_, i) => ({
   hour: i,
@@ -164,17 +53,30 @@ const ClientOnly = ({ children }: ClientOnlyProps) => {
   return isClient ? <>{children}</> : null;
 };
 
-const Calendar = () => {
-  const [currentDate, setCurrentDate] = useState(getInitialDate());
-  const [events, setEvents] = useState<Event[]>(mockEvents);
+interface CalendarProps {
+  viewMode: ViewMode;
+  currentDate: Date;
+  currentUser: {
+    name: string;
+    email: string;
+    avatar: string;
+  };
+}
+
+const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
+  const [events, setEvents] = useState<Event[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const weekViewRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
+  const [initialTime, setInitialTime] = useState<string | undefined>();
 
   // Load events from localStorage on component mount
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   useEffect(() => {
     if (isClient) {
       const savedEvents = localStorage.getItem('calendarEvents');
@@ -184,29 +86,9 @@ const Calendar = () => {
           setEvents(parsedEvents);
         } catch (error) {
           console.error('Error loading events from localStorage:', error);
-          // Fallback to mock events if there's an error
-          setEvents(mockEvents);
+          setEvents([]);
         }
       }
-    }
-  }, [isClient]);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient) {
-      const now = new Date();
-      // Use local time instead of UTC
-      setCurrentDate(new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        0,
-        0,
-        0
-      ));
     }
   }, [isClient]);
 
@@ -239,26 +121,6 @@ const Calendar = () => {
     return weekDates;
   };
 
-  const prevPeriod = () => {
-    const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setDate(newDate.getDate() - 7);
-    }
-    setCurrentDate(newDate);
-  };
-
-  const nextPeriod = () => {
-    const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(newDate.getMonth() + 1);
-    } else {
-      newDate.setDate(newDate.getDate() + 7);
-    }
-    setCurrentDate(newDate);
-  };
-
   const getEventsForDay = (date: Date) => {
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     return events.filter(event => event.date === dateStr);
@@ -273,10 +135,16 @@ const Calendar = () => {
     
     const now = new Date();
     const newDate = new Date(date);
-    newDate.setHours(now.getHours());
-    newDate.setMinutes(Math.floor(now.getMinutes() / 15) * 15);
+    const hour = now.getHours();
+    const minutes = Math.floor(now.getMinutes() / 15) * 15;
+    newDate.setHours(hour);
+    newDate.setMinutes(minutes);
+    
+    // Format the time string
+    const timeString = `${String(hour).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     
     setSelectedDate(newDate);
+    setInitialTime(timeString);
   };
 
   const handleWeekTimeClick = (e: React.MouseEvent, date: Date, hour: number) => {
@@ -295,7 +163,11 @@ const Calendar = () => {
     newDate.setHours(hour);
     newDate.setMinutes(roundedMinutes);
     
+    // Format the time string
+    const timeString = `${String(hour).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`;
+    
     setSelectedDate(newDate);
+    setInitialTime(timeString);
   };
 
   const handleSaveEvent = (eventData: Omit<Event, 'id' | 'uid' | 'created' | 'lastModified'>) => {
@@ -303,15 +175,11 @@ const Calendar = () => {
     
     // Ensure date is in YYYY-MM-DD format
     const formattedDate = eventData.date.split('T')[0];
-    
-    console.log('Saving event with date:', {
-      originalDate: eventData.date,
-      formattedDate
-    });
 
     const eventWithFormattedDate = {
       ...eventData,
-      date: formattedDate
+      date: formattedDate,
+      user: currentUser.name, // Use the currentUser prop
     };
     
     let updatedEvents: Event[];
@@ -335,8 +203,6 @@ const Calendar = () => {
         lastModified: now,
       };
       updatedEvents = [...events, newEvent];
-      
-      console.log('New event created:', newEvent);
     }
     
     setEvents(updatedEvents);
@@ -388,25 +254,68 @@ const Calendar = () => {
     return compareDate < now;
   };
 
+  const EventCard = ({ event, onClick, colorClass = 'bg-blue-100 text-blue-800 hover:bg-blue-200' }: { 
+    event: Event; 
+    onClick: (e: React.MouseEvent) => void;
+    colorClass?: string;
+  }) => {
+    return (
+      <div
+        onClick={onClick}
+        className={`text-xs rounded px-1 py-0.5 mb-1 cursor-pointer transition-colors relative ${colorClass}`}
+      >
+        <div className="font-medium truncate">
+          {event.time}～{event.endTime} {event.title}
+        </div>
+      </div>
+    );
+  };
+
+  const WeekEventCard = ({ 
+    event, 
+    onClick, 
+    style, 
+    colorClass 
+  }: { 
+    event: Event; 
+    onClick: (e: React.MouseEvent) => void;
+    style: React.CSSProperties;
+    colorClass: string;
+  }) => {    
+    return (
+      <div
+        onClick={onClick}
+        className={`absolute mx-1 rounded px-1 py-0.5 cursor-pointer transition-colors overflow-visible text-xs ${colorClass}`}
+        style={style}
+      >
+        <div className="font-medium truncate">
+          {event.time}～{event.endTime} {event.title}
+        </div>
+        <div className="truncate text-xs opacity-75">
+          {event.location}
+        </div>
+      </div>
+    );
+  };
+
   const renderMonthView = () => {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDayOfMonth = getFirstDayOfMonth(currentDate);
 
     return (
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 border-t border-l border-gray-200">
         {weekDays.map(day => (
-          <div key={day} className="text-center font-semibold py-2">
+          <div key={day} className="text-center py-2 text-sm font-medium border-r border-gray-200">
             {day}
           </div>
         ))}
         
         {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-          <div key={`empty-${index}`} className="h-32 bg-gray-50"></div>
+          <div key={`empty-${index}`} className="h-[120px] bg-gray-50 border-r border-b border-gray-200"></div>
         ))}
         
         {Array.from({ length: daysInMonth }).map((_, index) => {
           const day = index + 1;
-          // Use local time instead of UTC
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
           const dayEvents = getEventsForDay(date);
           const todayCheck = isToday(date);
@@ -415,25 +324,23 @@ const Calendar = () => {
             <div
               key={day}
               onClick={(e) => handleMonthDateClick(e, date)}
-              className="h-32 border border-gray-100 p-1 hover:bg-gray-50 cursor-pointer relative group"
+              className="h-[120px] border-r border-b border-gray-200 p-1 hover:bg-gray-50/50 cursor-pointer relative group"
             >
               <div className="flex flex-col items-start">
-                <div className={`font-medium mb-1 ${todayCheck ? 'w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center' : ''}`}>
+                <div className={`text-sm font-medium mb-1 ${todayCheck ? 'w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center' : ''}`}>
                   {day}
                 </div>
               </div>
-              {dayEvents.slice(0, 2).map(event => (
-                <div
+              {dayEvents.slice(0, 3).map(event => (
+                <EventCard
                   key={event.id}
+                  event={event}
                   onClick={(e) => handleEventClick(e, event)}
-                  className="text-xs bg-blue-100 text-blue-800 rounded px-1 py-0.5 mb-1 hover:bg-blue-200 cursor-pointer transition-colors"
-                >
-                  <div className="font-medium">{event.time}～{event.endTime} {event.title}</div>
-                </div>
+                />
               ))}
-              {dayEvents.length > 2 && (
+              {dayEvents.length > 3 && (
                 <div className="text-xs text-gray-500">
-                  他 {dayEvents.length - 2} 件
+                  他 {dayEvents.length - 3} 件
                 </div>
               )}
               
@@ -465,21 +372,57 @@ const Calendar = () => {
       return hours * 60 + minutes;
     };
 
+    const eventColors = [
+      'bg-blue-100 text-blue-800 hover:bg-blue-200',
+      'bg-green-100 text-green-800 hover:bg-green-200',
+      'bg-purple-100 text-purple-800 hover:bg-purple-200',
+      'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+      'bg-pink-100 text-pink-800 hover:bg-pink-200'
+    ];
+
+    const getOverlappingEvents = (events: Event[]) => {
+      const overlaps = new Map<number, number>();
+      const positions = new Map<number, number>();
+      
+      events.forEach((event, index) => {
+        const startMinutes = timeToMinutes(event.time);
+        const endMinutes = timeToMinutes(event.endTime);
+        let overlapCount = 0;
+        let maxPosition = -1;
+        
+        events.forEach((otherEvent, otherIndex) => {
+          if (index !== otherIndex) {
+            const otherStartMinutes = timeToMinutes(otherEvent.time);
+            const otherEndMinutes = timeToMinutes(otherEvent.endTime);
+            
+            if (!(endMinutes <= otherStartMinutes || startMinutes >= otherEndMinutes)) {
+              overlapCount++;
+              if (positions.has(otherEvent.id)) {
+                maxPosition = Math.max(maxPosition, positions.get(otherEvent.id)!);
+              }
+            }
+          }
+        });
+        
+        overlaps.set(event.id, overlapCount);
+        positions.set(event.id, maxPosition + 1);
+      });
+      
+      return { overlaps, positions };
+    };
+
     const shouldShowEvent = (event: Event, hour: number, dateStr: string) => {
       if (event.date !== dateStr) return false;
 
       const eventStartMinutes = timeToMinutes(event.time);
-      const eventEndMinutes = timeToMinutes(event.endTime);
-      const slotStartMinutes = hour * 60;
-      const slotEndMinutes = (hour + 1) * 60;
-
-      return eventStartMinutes < slotEndMinutes && eventEndMinutes > slotStartMinutes;
+      const eventStartHour = Math.floor(eventStartMinutes / 60);
+      return eventStartHour === hour;
     };
 
     return (
-      <div className="flex h-[calc(100vh-200px)]">
+      <div className="flex h-full -ml-[80px]">
         {/* Time slots column */}
-        <div className="w-20 flex-shrink-0 border-r border-gray-200">
+        <div className="w-20 flex-shrink-0">
           <div className="h-14 bg-white sticky top-0 z-20" />
         </div>
 
@@ -489,7 +432,7 @@ const Calendar = () => {
             {/* Headers row */}
             <div className="sticky top-0 z-20 bg-white col-span-2 grid grid-cols-[80px_1fr]">
               <div />
-              <div className="grid grid-cols-7">
+              <div className="grid grid-cols-7 border-t border-l border-gray-200">
                 {weekDates.map((date, index) => {
                   const isCurrentMonth = date.getMonth() === currentDate.getMonth();
                   const todayCheck = isToday(date);
@@ -498,7 +441,7 @@ const Calendar = () => {
                   return (
                     <div
                       key={index}
-                      className={`h-14 border-b border-r border-gray-200 p-1 ${
+                      className={`h-14 border-r border-b border-gray-200 p-1 ${
                         !isCurrentMonth ? 'bg-gray-50' : ''
                       } ${isWeekendDay ? 'bg-gray-50' : ''}`}
                     >
@@ -525,13 +468,13 @@ const Calendar = () => {
             </div>
 
             {/* Scrollable content */}
-            <div ref={weekViewRef} className="col-span-2 grid grid-cols-[80px_1fr] overflow-auto" style={{ height: 'calc(100vh - 250px)' }}>
+            <div ref={weekViewRef} className="col-span-2 grid grid-cols-[80px_1fr] overflow-auto" style={{ height: 'calc(100vh - 180px)' }}>
               {/* Time labels column */}
               <div className="bg-white">
-                {timeSlots.map(({ hour, label }) => (
+                {timeSlots.map(({ hour: slotHour, label }) => (
                   <div
-                    key={hour}
-                    className="h-16 border-b border-gray-100 text-xs text-gray-500 pr-2 text-right flex items-center justify-end"
+                    key={slotHour}
+                    className="h-16 text-xs text-gray-500 pr-2 text-right flex items-center justify-end"
                   >
                     {label}
                   </div>
@@ -539,7 +482,7 @@ const Calendar = () => {
               </div>
 
               {/* Time grid with current time indicator */}
-              <div className="relative">
+              <div className="relative border-l border-gray-200">
                 {/* Current time indicator */}
                 {isToday(weekDates[new Date().getDay()]) && (
                   <div 
@@ -557,19 +500,21 @@ const Calendar = () => {
                       {weekDates.map((date, dayIndex) => {
                         const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                         const hourEvents = events.filter(event => shouldShowEvent(event, hour, dateStr));
+                        const { overlaps, positions } = getOverlappingEvents(hourEvents);
                         const isWeekendDay = isWeekend(dayIndex);
                         const isPast = isPastTime(date, hour);
+                        const isLastHour = hour === 23;
 
                         return (
                           <div
                             key={`${hour}-${dayIndex}`}
-                            className={`h-16 border-b border-r border-gray-100 relative group
+                            className={`h-16 border-r ${!isLastHour ? 'border-b' : ''} border-gray-200 relative group
                               ${isWeekendDay ? 'bg-gray-50' : ''}
                               ${isPast ? 'bg-gray-50/50' : ''}
                             `}
                             onClick={(e) => handleWeekTimeClick(e, date, hour)}
                           >
-                            {hourEvents.map(event => {
+                            {hourEvents.map((event, index) => {
                               const eventStartMinutes = timeToMinutes(event.time);
                               const eventEndMinutes = timeToMinutes(event.endTime);
                               const slotStartMinutes = hour * 60;
@@ -577,22 +522,27 @@ const Calendar = () => {
                               const top = Math.max(0, eventStartMinutes - slotStartMinutes);
                               const duration = eventEndMinutes - eventStartMinutes;
                               const height = Math.min(60, duration) * (64 / 60);
+                              
+                              const overlapCount = overlaps.get(event.id) || 0;
+                              const position = positions.get(event.id) || 0;
+                              const width = overlapCount > 0 ? `calc((100% - 8px) / ${overlapCount + 1})` : 'calc(100% - 8px)';
+                              const left = position * (100 / (overlapCount + 1));
+                              const colorIndex = index % eventColors.length;
 
                               return (
-                                <div
+                                <WeekEventCard
                                   key={event.id}
+                                  event={event}
                                   onClick={(e) => handleEventClick(e, event)}
-                                  className="absolute left-0 right-0 mx-1 rounded px-1 py-0.5 bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 transition-colors overflow-hidden text-xs"
                                   style={{
                                     top: `${(top * 64) / 60}px`,
                                     height: `${height}px`,
-                                    zIndex: 10,
+                                    width,
+                                    left: `calc(${left}% + 4px)`,
+                                    zIndex: 10 + position,
                                   }}
-                                >
-                                  <div className="font-medium truncate">
-                                    {event.time}～{event.endTime} {event.title}
-                                  </div>
-                                </div>
+                                  colorClass={eventColors[colorIndex]}
+                                />
                               );
                             })}
 
@@ -625,6 +575,7 @@ const Calendar = () => {
     setSelectedEvent(null);
     setSelectedDate(null);
     setEditingEvent(null);
+    setInitialTime(undefined);
   };
 
   const handleDeleteEvent = (eventToDelete: Event) => {
@@ -636,58 +587,10 @@ const Calendar = () => {
 
   return (
     <div 
-      className="bg-white rounded-lg shadow p-6"
+      className="w-full"
       onClick={handleBackgroundClick}
     >
-      <div 
-        className="flex justify-between items-center mb-6"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold">
-            {currentDate.getFullYear()}年 {monthNames[currentDate.getMonth()]}
-            {viewMode === 'week' && ` 第${Math.ceil(currentDate.getDate() / 7)}週`}
-          </h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('month')}
-              className={`px-3 py-1 rounded transition-colors ${
-                viewMode === 'month'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              月
-            </button>
-            <button
-              onClick={() => setViewMode('week')}
-              className={`px-3 py-1 rounded transition-colors ${
-                viewMode === 'week'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              週
-            </button>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={prevPeriod}
-            className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
-          >
-            {viewMode === 'month' ? '前月' : '前週'}
-          </button>
-          <button
-            onClick={nextPeriod}
-            className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
-          >
-            {viewMode === 'month' ? '次月' : '次週'}
-          </button>
-        </div>
-      </div>
-
-      <div>
+      <div className="relative h-[calc(100vh-80px)] overflow-hidden">
         <ClientOnly>
           {viewMode === 'month' ? renderMonthView() : renderWeekView()}
         </ClientOnly>
@@ -700,6 +603,7 @@ const Calendar = () => {
             onSave={handleSaveEvent}
             onClose={handleBackgroundClick}
             editingEvent={editingEvent}
+            initialTime={initialTime}
           />
         </div>
       )}
