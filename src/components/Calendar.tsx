@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import EventForm from './EventForm';
-import EventDetail from './EventDetail';
+import EventDetailCard from './EventDetailCard';
 
 interface Event {
   id: number;
@@ -301,6 +301,13 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
   const renderMonthView = () => {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDayOfMonth = getFirstDayOfMonth(currentDate);
+    
+    // Get the last day of the previous month
+    const prevMonthLastDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
+    const prevMonthDays = prevMonthLastDate.getDate();
+    
+    // Calculate previous month's visible days
+    const prevMonthStartDay = prevMonthDays - firstDayOfMonth + 1;
 
     return (
       <div className="grid grid-cols-7 border-t border-l border-gray-200">
@@ -310,21 +317,65 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
           </div>
         ))}
         
-        {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-          <div key={`empty-${index}`} className="h-[120px] bg-gray-50 border-r border-b border-gray-200"></div>
-        ))}
+        {/* Previous month's days */}
+        {Array.from({ length: firstDayOfMonth }).map((_, index) => {
+          const day = prevMonthStartDay + index;
+          const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, day);
+          const dayEvents = getEventsForDay(date);
+          
+          return (
+            <div
+              key={`prev-${index}`}
+              onClick={(e) => handleMonthDateClick(e, date)}
+              className="h-[120px] bg-gray-50 border-r border-b border-gray-200 p-1 hover:bg-gray-100/50 cursor-pointer relative group"
+            >
+              <div className="flex flex-col items-start">
+                <div className="text-sm text-gray-400 mb-1">
+                  {day}
+                </div>
+              </div>
+              {dayEvents.slice(0, 3).map(event => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onClick={(e) => handleEventClick(e, event)}
+                  colorClass="bg-gray-100 text-gray-600 hover:bg-gray-200"
+                />
+              ))}
+              {dayEvents.length > 3 && (
+                <div className="text-xs text-gray-400">
+                  他 {dayEvents.length - 3} 件
+                </div>
+              )}
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMonthDateClick(e, date);
+                }}
+                className="absolute top-1 right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                +
+              </button>
+            </div>
+          );
+        })}
         
+        {/* Current month's days */}
         {Array.from({ length: daysInMonth }).map((_, index) => {
           const day = index + 1;
           const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
           const dayEvents = getEventsForDay(date);
           const todayCheck = isToday(date);
+          const dayOfWeek = date.getDay();
+          const isWeekendDay = isWeekend(dayOfWeek);
           
           return (
             <div
               key={day}
               onClick={(e) => handleMonthDateClick(e, date)}
-              className="h-[120px] border-r border-b border-gray-200 p-1 hover:bg-gray-50/50 cursor-pointer relative group"
+              className={`h-[120px] border-r border-b border-gray-200 p-1 hover:bg-gray-50/50 cursor-pointer relative group
+                ${isWeekendDay ? 'bg-gray-50' : ''}`}
             >
               <div className="flex flex-col items-start">
                 <div className={`text-sm font-medium mb-1 ${todayCheck ? 'w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center' : ''}`}>
@@ -340,6 +391,50 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
               ))}
               {dayEvents.length > 3 && (
                 <div className="text-xs text-gray-500">
+                  他 {dayEvents.length - 3} 件
+                </div>
+              )}
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMonthDateClick(e, date);
+                }}
+                className="absolute top-1 right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                +
+              </button>
+            </div>
+          );
+        })}
+        
+        {/* Next month's days */}
+        {Array.from({ length: 42 - (firstDayOfMonth + daysInMonth) }).map((_, index) => {
+          const day = index + 1;
+          const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, day);
+          const dayEvents = getEventsForDay(date);
+          
+          return (
+            <div
+              key={`next-${index}`}
+              onClick={(e) => handleMonthDateClick(e, date)}
+              className="h-[120px] bg-gray-50 border-r border-b border-gray-200 p-1 hover:bg-gray-100/50 cursor-pointer relative group"
+            >
+              <div className="flex flex-col items-start">
+                <div className="text-sm text-gray-400 mb-1">
+                  {day}
+                </div>
+              </div>
+              {dayEvents.slice(0, 3).map(event => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onClick={(e) => handleEventClick(e, event)}
+                  colorClass="bg-gray-100 text-gray-600 hover:bg-gray-200"
+                />
+              ))}
+              {dayEvents.length > 3 && (
+                <div className="text-xs text-gray-400">
                   他 {dayEvents.length - 3} 件
                 </div>
               )}
@@ -440,21 +535,21 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
                   
                   return (
                     <div
-                      key={index}
+                      key={`header-${date.toISOString()}`}
                       className={`h-14 border-r border-b border-gray-200 p-1 ${
                         !isCurrentMonth ? 'bg-gray-50' : ''
                       } ${isWeekendDay ? 'bg-gray-50' : ''}`}
                     >
                       <div className="flex flex-col items-center justify-center h-full">
-                        <div className={`text-sm ${isWeekendDay ? 'text-gray-500' : ''}`}>
+                        <div className={`text-xs ${isWeekendDay ? 'text-gray-500' : ''}`}>
                           {weekDays[index]}
                         </div>
                         <div
-                          className={`text-sm font-medium mt-0.5 flex items-center justify-center ${
+                          className={`text-lg font-medium mt-0.5 flex items-center justify-center ${
                             !isCurrentMonth ? 'text-gray-400' : ''
                           } ${
                             todayCheck
-                              ? 'w-6 h-6 bg-blue-500 text-white rounded-full'
+                              ? 'w-8 h-8 bg-blue-500 text-white rounded-full'
                               : isWeekendDay ? 'text-gray-500' : ''
                           }`}
                         >
@@ -473,7 +568,7 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
               <div className="bg-white">
                 {timeSlots.map(({ hour: slotHour, label }) => (
                   <div
-                    key={slotHour}
+                    key={`time-${slotHour}`}
                     className="h-16 text-xs text-gray-500 pr-2 text-right flex items-center justify-end"
                   >
                     {label}
@@ -496,7 +591,7 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
 
                 <div className="grid grid-cols-7">
                   {timeSlots.map(({ hour }) => (
-                    <React.Fragment key={hour}>
+                    <React.Fragment key={`hour-${hour}`}>
                       {weekDates.map((date, dayIndex) => {
                         const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                         const hourEvents = events.filter(event => shouldShowEvent(event, hour, dateStr));
@@ -507,7 +602,7 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
 
                         return (
                           <div
-                            key={`${hour}-${dayIndex}`}
+                            key={`cell-${date.toISOString()}-${hour}`}
                             className={`h-16 border-r ${!isLastHour ? 'border-b' : ''} border-gray-200 relative group
                               ${isWeekendDay ? 'bg-gray-50' : ''}
                               ${isPast ? 'bg-gray-50/50' : ''}
@@ -531,7 +626,7 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
 
                               return (
                                 <WeekEventCard
-                                  key={event.id}
+                                  key={`event-${event.id}-${hour}`}
                                   event={event}
                                   onClick={(e) => handleEventClick(e, event)}
                                   style={{
@@ -609,13 +704,21 @@ const Calendar = ({ viewMode, currentDate, currentUser }: CalendarProps) => {
       )}
 
       {selectedEvent && (
-        <div onClick={e => e.stopPropagation()}>
-          <EventDetail
-            event={selectedEvent}
-            onClose={handleBackgroundClick}
-            onEdit={handleEditEvent}
-            onDelete={handleDeleteEvent}
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-[9999]"
+          onClick={e => e.stopPropagation()}
+        >
+          <div 
+            className="fixed inset-0 bg-black/50"
+            onClick={handleBackgroundClick}
           />
+          <div className="relative">
+            <EventDetailCard
+              event={selectedEvent}
+              onEdit={() => handleEditEvent(selectedEvent)}
+              onDelete={() => handleDeleteEvent(selectedEvent)}
+            />
+          </div>
         </div>
       )}
     </div>

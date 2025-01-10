@@ -76,18 +76,24 @@ export default function Home() {
                 {currentDate.getFullYear()}年 {monthNames[currentDate.getMonth()]}
                 {viewMode === 'week' && ` 第${Math.ceil(currentDate.getDate() / 7)}週`}
               </h2>
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 <button
                   onClick={prevPeriod}
-                  className="px-2 py-0.5 bg-gray-100 rounded text-sm hover:bg-gray-200"
+                  className="px-3 py-1.5 bg-white border rounded-md text-sm hover:bg-gray-50 flex items-center gap-1 text-gray-600"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
                   {viewMode === 'month' ? '前月' : '前週'}
                 </button>
                 <button
                   onClick={nextPeriod}
-                  className="px-2 py-0.5 bg-gray-100 rounded text-sm hover:bg-gray-200"
+                  className="px-3 py-1.5 bg-white border rounded-md text-sm hover:bg-gray-50 flex items-center gap-1 text-gray-600"
                 >
                   {viewMode === 'month' ? '次月' : '次週'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
