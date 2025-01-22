@@ -53,6 +53,45 @@ class ApiClient {
             }
         }
     }
+
+    async put<T, D = Record<string, unknown>>(url: string, data: D): Promise<ApiResponse<T>> {
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+            const responseData = await response.json();
+            return responseData as ApiResponse<T>;
+        } catch (error) {
+            return {
+                success: false,
+                data: {} as T,
+                error: error instanceof Error ? error.message : '未知错误',
+            }
+        }
+    }
+
+    async delete<T>(url: string): Promise<ApiResponse<T>> {
+        try {
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const responseData = await response.json();
+            return responseData as ApiResponse<T>;
+        } catch (error) {
+            return {
+                success: false,
+                data: {} as T,
+                error: error instanceof Error ? error.message : '未知错误',
+            }
+        }
+    }
 }
 
 export const apiClient = ApiClient.getInstance();

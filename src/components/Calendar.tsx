@@ -80,23 +80,12 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
                         startDate: '2024-03-01',
                         endDate: '2025-03-31'
                     });
-                    console.log('API返回的会议数据:', data);
                     if (Array.isArray(data)) {
                         setEvents(data);
                     }
                 } catch (err) {
                     console.error('获取会议列表失败:', err);
-                    // 如果API调用失败，尝试从localStorage加载
-                    const savedEvents = localStorage.getItem('calendarEvents');
-                    if (savedEvents) {
-                        try {
-                            const parsedEvents = JSON.parse(savedEvents);
-                            setEvents(parsedEvents);
-                        } catch (error) {
-                            console.error('Error loading events from localStorage:', error);
-                            setEvents([]);
-                        }
-                    }
+                    setEvents([]);
                 }
             };
             fetchEvents();
@@ -183,29 +172,27 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
             try {
                 const eventWithUser = {
                     ...eventData,
-                    user: currentUser.name // Use the currentUser prop
+                    user: currentUser.name
                 };
                 
                 if (editingEvent) {
                     // 編集ロジック
-                    const now = new Date().toISOString();
-                    const updatedEvent = events.map(event =>
-                        event.id === editingEvent.id ? {
-                            ...eventWithUser,
-                            id: event.id,
-                            uid: event.uid,
-                            created: event.created,
-                            lastModified: now,
-                        } : event
-                    );
-                    setEvents(updatedEvent);
-                    localStorage.setItem('calendarEvents', JSON.stringify(updatedEvent));
+                    const updatedEvent = await eventService.updateEvent(editingEvent.id, {
+                        ...eventWithUser,
+                        lastModified: new Date().toISOString()
+                    });
+                    if (updatedEvent) {
+                        setEvents(prevEvents => 
+                            prevEvents.map(event => 
+                                event.id === editingEvent.id ? updatedEvent : event
+                            )
+                        );
+                    }
                 } else {
                     // 作成ロジック
                     const createEvent = await eventService.createEvent(eventWithUser);
                     if (createEvent) {
                         setEvents(prevEvents => [...prevEvents, createEvent]);
-                        console.log('会議作成成功:', createEvent);
                     } else {
                         alert('会議作成失敗');
                     }
@@ -681,11 +668,14 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
             setInitialTime(undefined);
         };
 
-        const handleDeleteEvent = (eventToDelete: Event) => {
-            const updatedEvents = events.filter(event => event.id !== eventToDelete.id);
-            setEvents(updatedEvents);
-            localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
-            setSelectedEvent(null);
+        const handleDeleteEvent = async (eventToDelete: Event) => {
+            try {
+                await eventService.deleteEvent(eventToDelete.id);
+                setEvents(prevEvents => prevEvents.filter(event => event.id !== eventToDelete.id));
+                setSelectedEvent(null);
+            } catch (error) {
+                console.error('会議削除失敗:', error);
+            }
         };
 
         return (

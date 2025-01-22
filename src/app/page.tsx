@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Calendar from '@/components/Calendar';
 import ChatbotWidget from '@/components/ChatbotWidget';
-import { initializeCalendarData } from '@/lib/mockData';
 import Link from 'next/link';
 
 type ViewMode = 'month' | 'week';
@@ -20,11 +19,6 @@ const currentUser = {
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
-
-  useEffect(() => {
-    // 初始化日程数据
-    initializeCalendarData();
-  }, []);
 
   const prevPeriod = () => {
     const newDate = new Date(currentDate);

@@ -37,5 +37,32 @@ export const eventService = {
             console.error('创建会议失败:', error);
             return null;
         }
+    },
+    /**
+     * 更新会议
+     */
+    async updateEvent(eventId: number, eventData: Partial<Event>): Promise<Event | null> {
+        try {
+            const response = await eventApi.updateEvent(eventId, eventData);
+            if (response.success && response.data) {
+                return response.data;
+            }
+            return null;
+        } catch (error) {
+            console.error('更新会议失败:', error);
+            return null;
+        }
+    },
+    /**
+     * 删除会议
+     */
+    async deleteEvent(eventId: number): Promise<boolean> {
+        try {
+            const response = await eventApi.deleteEvent(eventId);
+            return response.success;
+        } catch (error) {
+            console.error('删除会议失败:', error);
+            return false;
+        }
     }
 };
