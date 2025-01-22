@@ -70,46 +70,39 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
         const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
         const [editingEvent, setEditingEvent] = useState<Event | null>(null);
         const weekViewRef = useRef<HTMLDivElement>(null);
-        const [isClient, setIsClient] = useState(false);
         const [initialTime, setInitialTime] = useState<string | undefined>();
 
-        // Load events from localStorage on component mount
+        // 从服务端获取会议列表
         useEffect(() => {
-            setIsClient(false);
-        }, []);
-
-        useEffect(() => {
-            if (isClient) {
-                const savedEvents = localStorage.getItem('calendarEvents');
-                if (savedEvents) {
-                    try {
-                        const parsedEvents = JSON.parse(savedEvents);
-                        setEvents(parsedEvents);
-                    } catch (error) {
-                        console.error('Error loading events from localStorage:', error);
-                        setEvents([]);
+            const fetchEvents = async () => {
+                try {
+                    const data = await eventService.getEvents({
+                        startDate: '2024-03-01',
+                        endDate: '2025-03-31'
+                    });
+                    console.log('API返回的会议数据:', data);
+                    if (Array.isArray(data)) {
+                        setEvents(data);
+                    }
+                } catch (err) {
+                    console.error('获取会议列表失败:', err);
+                    // 如果API调用失败，尝试从localStorage加载
+                    const savedEvents = localStorage.getItem('calendarEvents');
+                    if (savedEvents) {
+                        try {
+                            const parsedEvents = JSON.parse(savedEvents);
+                            setEvents(parsedEvents);
+                        } catch (error) {
+                            console.error('Error loading events from localStorage:', error);
+                            setEvents([]);
+                        }
                     }
                 }
-            } else {
-                // 从服务端获取会议列表
-                const fetchEvents = async () => {
-                    try {
-                        const data = await eventService.getEvents({
-                            startDate: '2024-03-01',
-                            endDate: '2025-03-31'
-                        });
-                        console.log('API返回的会议数据:', data);  // 添加日志
-                        setEvents(data);
-                    } catch (err) {
-                        console.error('获取会议列表失败:', err);
-                    }
-                };
-                fetchEvents();  // 调用获取会议列表的方法 (异步)
-            }
-        }, [isClient]);
+            };
+            fetchEvents();
+        }, []);
 
         const isToday = (date: Date) => {
-            if (!isClient) return false;
             const today = new Date();
             return date.getFullYear() === today.getFullYear() &&
                 date.getMonth() === today.getMonth() &&
@@ -260,7 +253,6 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
         };
 
         const isPastTime = (date: Date, hour: number, minute: number = 0) => {
-            if (!isClient) return false;
             const now = new Date();
             const compareDate = new Date(date);
             compareDate.setHours(hour);
@@ -472,7 +464,7 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
 
         const renderWeekView = () => {
             const weekDates = getWeekDates(currentDate);
-            const now = isClient ? new Date() : new Date(0);
+            const now = new Date();
             const currentHour = now.getHours();
             const currentMinute = now.getMinutes();
             const currentTimePosition = (currentHour * 64) + ((currentMinute / 60) * 64);
