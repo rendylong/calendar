@@ -188,12 +188,17 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
 
         const handleSaveEvent = async (eventData: Omit<Event, 'id' | 'uid' | 'created' | 'lastModified'>) => {
             try {
+                const eventWithUser = {
+                    ...eventData,
+                    user: currentUser.name // Use the currentUser prop
+                };
+                
                 if (editingEvent) {
-                    // 编辑逻辑
+                    // 編集ロジック
                     const now = new Date().toISOString();
                     const updatedEvent = events.map(event =>
                         event.id === editingEvent.id ? {
-                            ...eventData,
+                            ...eventWithUser,
                             id: event.id,
                             uid: event.uid,
                             created: event.created,
@@ -203,63 +208,22 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
                     setEvents(updatedEvent);
                     localStorage.setItem('calendarEvents', JSON.stringify(updatedEvent));
                 } else {
-                    // 创建逻辑
-                    // debugger;
-                    const createEvent = await eventService.createEvent(eventData);
+                    // 作成ロジック
+                    const createEvent = await eventService.createEvent(eventWithUser);
                     if (createEvent) {
                         setEvents(prevEvents => [...prevEvents, createEvent]);
-                        console.log('创建会议成功:', createEvent);  // 添加日志
+                        console.log('会議作成成功:', createEvent);
                     } else {
-                        // alert
-                        alert('创建会议失败');
+                        alert('会議作成失敗');
                     }
                 }
-                // 重置表单状态
+                // フォーム状態のリセット
                 setSelectedDate(null);
                 setEditingEvent(null);
                 setInitialTime(undefined);
             } catch (error) {
-                console.error('保存会议失败:', error);
+                console.error('会議保存失敗:', error);
             }
-            // const now = new Date().toISOString();
-            //
-            // // Ensure date is in YYYY-MM-DD format
-            // const formattedDate = eventData.date.split('T')[0];
-            //
-            // const eventWithFormattedDate = {
-            //     ...eventData,
-            //     date: formattedDate,
-            //     user: currentUser.name, // Use the currentUser prop
-            // };
-            //
-            // let updatedEvents: Event[];
-            //
-            // if (editingEvent) {
-            //     updatedEvents = events.map(event =>
-            //         event.id === editingEvent.id ? {
-            //             ...eventWithFormattedDate,
-            //             id: event.id,
-            //             uid: event.uid,
-            //             created: event.created,
-            //             lastModified: now,
-            //         } : event
-            //     );
-            // } else {
-            //     const newEvent = {
-            //         ...eventWithFormattedDate,
-            //         id: events.length + 1,
-            //         uid: `evt-${(events.length + 1).toString().padStart(3, '0')}@example.com`,
-            //         created: now,
-            //         lastModified: now,
-            //     };
-            //     updatedEvents = [...events, newEvent];
-            // }
-            //
-            // setEvents(updatedEvents);
-            // localStorage.setItem('calendarEvents', JSON.stringify(updatedEvents));
-            //
-            // setSelectedDate(null);
-            // setEditingEvent(null);
         };
 
         const handleEventClick = (e: React.MouseEvent, event: Event) => {

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { eventService } from '@/services/eventService';
 import type { Event } from '@/api/types/event';
 

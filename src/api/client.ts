@@ -34,7 +34,7 @@ class ApiClient {
         }
     }
 
-    async post<T>(url: string, data: any): Promise<ApiResponse<T>> {
+    async post<T, D = Record<string, unknown>>(url: string, data: D): Promise<ApiResponse<T>> {
         try {
             const response = await fetch(url, {
                 method: 'POST',

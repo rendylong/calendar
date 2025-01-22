@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export async function GET() {
   // 模拟的会议数据
   const mockEvents = [
     {
