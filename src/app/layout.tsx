@@ -24,11 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: removeJsFocusVisible }} />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} min-h-screen bg-background`}>
         {children}
         <Toaster 
           position="bottom-right"
