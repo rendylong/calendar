@@ -74,13 +74,14 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
 
         // 从服务端获取会议列表
         useEffect(() => {
+            let isMounted = true;
             const fetchEvents = async () => {
                 try {
                     const data = await eventService.getEvents({
                         startDate: '2024-03-01',
                         endDate: '2025-03-31'
                     });
-                    if (Array.isArray(data)) {
+                    if (isMounted && Array.isArray(data)) {
                         setEvents(data);
                     }
                 } catch (err) {
@@ -89,6 +90,9 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
                 }
             };
             fetchEvents();
+            return () => {
+                isMounted = false;
+            };
         }, []);
 
         const isToday = (date: Date) => {
@@ -174,7 +178,7 @@ const Calendar = ({viewMode, currentDate, currentUser}: CalendarProps) => {
                     ...eventData,
                     user: currentUser.name
                 };
-                
+
                 if (editingEvent) {
                     // 編集ロジック
                     const updatedEvent = await eventService.updateEvent(editingEvent.id, {
